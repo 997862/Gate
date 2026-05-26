@@ -1,76 +1,15 @@
-# =========================================
 # Gate 配置文件
-# =========================================
 
 # --- 基础配置 ---
-# 面板类型: xboard, v2board, sspanel, newboard
 type=xboard
-# 节点协议类型: vmess, vless, trojan, shadowsocks, hysteria2, tuic
 server_type=vmess
-# 节点 ID (对应面板后台生成的编号)
-node_id=1
-# 授权密钥 (开源免费，此项留空)
-license_key=
-
-# --- 对接方式 (二选一) ---
-# 可选值: webapi, db, none (单机模式)
+node_id=
 api=webapi
 
 # --- WebAPI 对接信息 ---
-# 面板 API 地址 (如 http://cloud.example.com)
-webapi_url=http://cloud-cdn.peaairport.com
-# 面板通信密钥 (WebAPI Key)
-webapi_key=SSi8Q-mQR2J_UsyO-H_UaPNDz2c5T90N0PGmmaZm
+webapi_url=
+webapi_key=
 
-# --- 数据库对接信息 ---
-db_host=
-db_port=3306
-db_name=
-db_user=
-db_password=
-
-# --- 证书配置 ---
-# 证书模式: manual (手动), acme (自动), none (无)
-cert_mode=none
-# 手动证书路径
-cert_file=
-key_file=
-# 自动证书配置
-cert_domain=
-cert_key_length=ec-256
-
-# --- Proxy Protocol 中转配置 ---
-# 是否开启 Proxy Protocol (true/false)
-proxy_protocol=false
-udp_proxy_protocol=false
-
-# --- Redis 配置 (全局 IP 限制) ---
-redis_enable=false
-redis_addr=127.0.0.1:6379
-redis_password=
-redis_db=0
-conn_limit_expiry=60
-
-# --- 动态限速配置 ---
-dy_limit_enable=false
-dy_limit_duration=
-dy_limit_trigger_time=60
-dy_limit_trigger_speed=100
-dy_limit_speed=30
-dy_limit_time=600
-dy_limit_white_user_id=
-
-# --- 限制配置 ---
-# 0 表示不限制
-user_conn_limit=0
-user_speed_limit=0
-node_speed_limit=0
-
-# --- 其他配置 ---
-# 数据检查间隔 (秒)
-check_interval=60
-submit_interval=60
-# 是否禁止 BitTorrent
-forbidden_bit_torrent=true
-# 日志级别: debug, info, warn, error
-log_level=info
+# --- 内存监控配置 ---
+# 当内存使用率超过此百分比时，自动清理缓存并重启服务 (默认 80)
+mem_threshold=80
