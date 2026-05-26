@@ -275,6 +275,15 @@ cmd_clear() {
     info "正在清理日志..."
     journalctl --rotate
     journalctl --vacuum-time=30d
+n# 心跳上报：向面板报告节点在线
+NODE_ID=$(grep "^node_id=" /etc/gate/gate.conf 2>/dev/null | cut -d= -f2)
+TOKEN=$(grep "^webapi_key=" /etc/gate/gate.conf 2>/dev/null | cut -d= -f2)
+API_URL=$(grep "^webapi_url=" /etc/gate/gate.conf 2>/dev/null | cut -d= -f2)
+if [ -n "$NODE_ID" ] && [ -n "$TOKEN" ] && [ -n "$API_URL" ]; then
+    curl -s -X POST "${API_URL}/api/v1/server/UniProxy/push?node_id=${NODE_ID}&token=${TOKEN}" \
+         -H "Content-Type: application/json" \
+         -d '{"data":[]}' >/dev/null 2>&1
+fi
     success "已清理 30 天前的日志"
 }
 
@@ -336,6 +345,15 @@ if [ "$usage" -gt "$THRESHOLD" ]; then
     echo "$(date) - Mem usage ${usage}% > ${THRESHOLD}%, restarted" >> /var/log/gate-monitor.log
 fi
 journalctl --vacuum-time=30d
+n# 心跳上报：向面板报告节点在线
+NODE_ID=$(grep "^node_id=" /etc/gate/gate.conf 2>/dev/null | cut -d= -f2)
+TOKEN=$(grep "^webapi_key=" /etc/gate/gate.conf 2>/dev/null | cut -d= -f2)
+API_URL=$(grep "^webapi_url=" /etc/gate/gate.conf 2>/dev/null | cut -d= -f2)
+if [ -n "$NODE_ID" ] && [ -n "$TOKEN" ] && [ -n "$API_URL" ]; then
+    curl -s -X POST "${API_URL}/api/v1/server/UniProxy/push?node_id=${NODE_ID}&token=${TOKEN}" \
+         -H "Content-Type: application/json" \
+         -d '{"data":[]}' >/dev/null 2>&1
+fi
 MEOF
     chmod +x "$monitor_script"
     
