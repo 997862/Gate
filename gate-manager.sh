@@ -1,6 +1,6 @@
 #!/bin/bash
-# Gate 代理网关管理脚本 v1.3.0
-# 100% 开源源码，支持二开，内置配置向导
+# Gate 代理网关管理脚本 v1.3.2
+# 修复 Trojan 证书 CN 不匹配 (自动根据面板地址生成证书)
 
 export LANG=zh_CN.UTF-8
 RED='\033[0;31m'
@@ -46,7 +46,7 @@ check_config() {
 # ============================================================
 setup_wizard() {
     echo -e "${BOLD}═══════════════════════════════════════${PLAIN}"
-    echo -e "${BOLD}   Gate 初始配置向导 (v1.3.0)${PLAIN}"
+    echo -e "${BOLD}   Gate 初始配置向导 (v1.3.2)${PLAIN}"
     echo -e "${BOLD}═══════════════════════════════════════${PLAIN}"
     echo ""
     echo "欢迎使用 Gate！只需几步即可连接您的面板。"
@@ -147,16 +147,42 @@ port = node_conf.get('server_port', 443)
 proto = node_conf.get('protocol', 'vmess').lower()
 net = node_conf.get('network', 'tcp').lower()
 
-users = [{'uuid': u['uuid']} for u in user_conf.get('users', [])]
+# Trojan 协议需要 password 字段，其他协议使用 uuid
+if proto == 'trojan':
+    users = [{'password': u['uuid']} for u in user_conf.get('users', [])]
+else:
+    users = [{'uuid': u['uuid']} for u in user_conf.get('users', [])]
+
+# 证书路径
+cert_dir = '${CONF_DIR}/certs'
+crt_path = f'{cert_dir}/trojan.crt'
+key_path = f'{cert_dir}/trojan.key'
+node_host = node_conf.get('host', 'trojan')
+
+import subprocess as sb
+import os as os_mod
+if not os_mod.path.exists(crt_path):
+    os_mod.makedirs(cert_dir, exist_ok=True)
+    sb.run(f"openssl req -x509 -nodes -newkey rsa:2048 -days 3650 -keyout {key_path} -out {crt_path} -subj '/CN={node_host}'", shell=True)
+
+inbound_config = {
+    'type': proto,
+    'listen': '::',
+    'listen_port': port,
+    'users': users if users else [{'uuid': '00000000-0000-0000-0000-000000000000'}]
+}
+
+if node_conf.get('tls') == 1:
+    inbound_config['tls'] = {
+        'enabled': True,
+        'certificate_path': crt_path,
+        'key_path': key_path,
+        'server_name': node_host
+    }
 
 cfg = {
     'log': {'level': 'info', 'timestamp': True},
-    'inbounds': [{
-        'type': proto,
-        'listen': '::',
-        'listen_port': port,
-        'users': users if users else [{'uuid': '00000000-0000-0000-0000-000000000000'}]
-    }],
+    'inbounds': [inbound_config],
     'outbounds': [{'type': 'direct', 'tag': 'direct'}]
 }
 
@@ -288,7 +314,7 @@ fi
 }
 
 cmd_version() {
-    echo -e "${BOLD}Gate Version:${PLAIN} v1.3.0"
+    echo -e "${BOLD}Gate Version:${PLAIN} v1.3.2"
     echo -e "${BOLD}Core Version:${PLAIN} $($CORE_BIN version | head -1)"
 }
 
@@ -385,7 +411,7 @@ cmd_test() {
 }
 
 cmd_help() {
-    echo -e "${BOLD}Gate 代理网关管理工具 v1.3.0${PLAIN}"
+    echo -e "${BOLD}Gate 代理网关管理工具 v1.3.2${PLAIN}"
     echo ""
     echo "  gate              启动交互面板"
     echo "  gate setup        启动配置向导"
@@ -414,7 +440,7 @@ cmd_interactive() {
 
     while true; do
         echo -e "${BOLD}═══════════════════════════════════════${PLAIN}"
-        echo -e "${BOLD}        Gate 代理网关管理面板 v1.3.0${PLAIN}"
+        echo -e "${BOLD}        Gate 代理网关管理面板 v1.3.2${PLAIN}"
         echo -e "${BOLD}═══════════════════════════════════════${PLAIN}"
         echo "  1. 查看节点信息 (info)"
         echo "  2. 启动服务 (start)"
