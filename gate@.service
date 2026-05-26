@@ -1,5 +1,5 @@
 [Unit]
-Description=Gate Proxy Instance (%i)
+Description=Gate 代理服务节点 (%i)
 After=network.target
 
 [Service]
@@ -8,6 +8,7 @@ User=root
 ExecStart=/usr/local/bin/gate-core run -c /etc/gate/%i.json
 Restart=on-failure
 RestartSec=5
+LimitNOFILE=65536
 
 [Install]
 WantedBy=multi-user.target
