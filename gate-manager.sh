@@ -1,6 +1,6 @@
 #!/bin/bash
-# Gate 代理网关管理脚本 v1.3.2
-# 修复 Trojan 证书 CN 不匹配 (自动根据面板地址生成证书)
+# Gate 代理网关管理脚本 v1.3.3
+# 新增 Shadowsocks 支持 (免证书/免对时) (自动根据面板地址生成证书)
 
 export LANG=zh_CN.UTF-8
 RED='\033[0;31m'
@@ -46,7 +46,7 @@ check_config() {
 # ============================================================
 setup_wizard() {
     echo -e "${BOLD}═══════════════════════════════════════${PLAIN}"
-    echo -e "${BOLD}   Gate 初始配置向导 (v1.3.2)${PLAIN}"
+    echo -e "${BOLD}   Gate 初始配置向导 (v1.3.3)${PLAIN}"
     echo -e "${BOLD}═══════════════════════════════════════${PLAIN}"
     echo ""
     echo "欢迎使用 Gate！只需几步即可连接您的面板。"
@@ -172,7 +172,13 @@ inbound_config = {
     'users': users if users else [{'uuid': '00000000-0000-0000-0000-000000000000'}]
 }
 
-if node_conf.get('tls') == 1:
+# Shadowsocks requires method
+if proto == 'shadowsocks':
+    inbound_config['method'] = node_conf.get('cipher', 'aes-256-gcm')
+    inbound_config['network'] = node_conf.get('network', 'tcp')
+
+# TLS handling (Skip for Shadowsocks)
+if node_conf.get('tls') == 1 and proto != 'shadowsocks':
     inbound_config['tls'] = {
         'enabled': True,
         'certificate_path': crt_path,
@@ -314,7 +320,7 @@ fi
 }
 
 cmd_version() {
-    echo -e "${BOLD}Gate Version:${PLAIN} v1.3.2"
+    echo -e "${BOLD}Gate Version:${PLAIN} v1.3.3"
     echo -e "${BOLD}Core Version:${PLAIN} $($CORE_BIN version | head -1)"
 }
 
@@ -411,7 +417,7 @@ cmd_test() {
 }
 
 cmd_help() {
-    echo -e "${BOLD}Gate 代理网关管理工具 v1.3.2${PLAIN}"
+    echo -e "${BOLD}Gate 代理网关管理工具 v1.3.3${PLAIN}"
     echo ""
     echo "  gate              启动交互面板"
     echo "  gate setup        启动配置向导"
@@ -440,7 +446,7 @@ cmd_interactive() {
 
     while true; do
         echo -e "${BOLD}═══════════════════════════════════════${PLAIN}"
-        echo -e "${BOLD}        Gate 代理网关管理面板 v1.3.2${PLAIN}"
+        echo -e "${BOLD}        Gate 代理网关管理面板 v1.3.3${PLAIN}"
         echo -e "${BOLD}═══════════════════════════════════════${PLAIN}"
         echo "  1. 查看节点信息 (info)"
         echo "  2. 启动服务 (start)"
