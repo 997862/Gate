@@ -137,6 +137,9 @@ cmd_fetch() {
     # 尝试多种 API 路径（Xboard / V2board / 其他）
     local endpoints=(
         "/api/v1/server/UniProxy/getNodeInfo?id=${node_id}"
+        "/api/v1/server/V2rayTlsController/getNodeInfo?id=${node_id}"
+        "/api/v1/server/TrojanTlsController/getNodeInfo?id=${node_id}"
+        "/api/v1/server/ShadowsocksTlsController/getNodeInfo?id=${node_id}"
         "/api/v1/server/NodeController/getNodeInfo?id=${node_id}"
         "/api/v1/server/DeepbworkController/getNodeInfo?id=${node_id}"
         "/mod_mu/nodes/${node_id}/info?key=${webapi_key}"
