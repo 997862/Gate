@@ -145,7 +145,7 @@ node_conf = json.loads('${node_config}')
 user_conf = json.loads('${user_list}')
 port = node_conf.get('server_port', 443)
 proto = node_conf.get('protocol', 'vmess').lower()
-net = node_conf.get('network', 'tcp').lower()
+net = (node_conf.get('network') or 'tcp').lower()
 
 # Trojan 协议需要 password 字段，其他协议使用 uuid
 if proto == 'trojan':
