@@ -192,8 +192,8 @@ new_instance() {
     "type": "vmess",
     "listen": "::",
     "listen_port": ${port},
-    "users": [{ "uuid": "${uuid}", "alterId": 0, "security": "auto" }],
-    "transport": { "type": "tcp" }
+    "users": [{ "uuid": "${uuid}" }]
+    
   }],
   "outbounds": [{ "type": "direct", "tag": "direct" }]
 }
@@ -209,8 +209,8 @@ EOF
     "type": "vless",
     "listen": "::",
     "listen_port": ${port},
-    "users": [{ "uuid": "${uuid}", "flow": "" }],
-    "transport": { "type": "tcp" }
+    "users": [{ "uuid": "${uuid}", "flow": "" }]
+    
   }],
   "outbounds": [{ "type": "direct", "tag": "direct" }]
 }
