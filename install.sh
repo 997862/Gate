@@ -12,7 +12,7 @@ PLAIN='\033[0m'
 BOLD='\033[1m'
 
 # 版本信息
-GATE_VERSION="1.2.0"
+GATE_VERSION="1.3.0"
 GITHUB_REPO="https://raw.githubusercontent.com/997862/Gate/main"
 
 check_root() {
