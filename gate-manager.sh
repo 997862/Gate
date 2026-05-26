@@ -1,5 +1,5 @@
 #!/bin/bash
-# Gate 代理网关管理脚本 v1.3.3
+# Gate 代理网关管理脚本 v1.3.4
 # 新增 Shadowsocks 支持 (免证书/免对时) (自动根据面板地址生成证书)
 
 export LANG=zh_CN.UTF-8
