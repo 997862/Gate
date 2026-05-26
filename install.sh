@@ -1,86 +1,138 @@
 #!/bin/bash
-# Gate 一键安装脚本
-# 基于 Sing-box 核心，完全对标 Soga 体验
+# Gate 代理网关一键安装脚本
+# 核心: sing-box (开源 Apache 2.0)
 
-export LANG=en_US.UTF-8
+export LANG=zh_CN.UTF-8
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
 PLAIN='\033[0m'
 BOLD='\033[1m'
 
-os_arch=""
-[[ $(uname -m) == "x86_64" || $(uname -m) == "x64" || $(uname -m) == "amd64" ]] && os_arch="amd64"
-[[ $(uname -m) == "aarch64" || $(uname -m) == "arm64" ]] && os_arch="arm64"
+# 版本信息
+GATE_VERSION="1.0.0"
+SINGBOX_VERSION="1.13.12"
+GITHUB_REPO="https://raw.githubusercontent.com/997862/Gate/main"
 
-[[ -z "$os_arch" ]] && echo -e "${RED}不支持的架构: $(uname -m)${PLAIN}" && exit 1
-[[ $EUID -ne 0 ]] && echo -e "${RED}错误：请使用 root 用户运行此脚本！${PLAIN}" && exit 1
+check_root() {
+    [[ $EUID -ne 0 ]] && echo -e "${RED}[错误] 请使用 root 用户运行安装脚本！${PLAIN}" && exit 1
+}
 
-echo -e ""
-echo -e "${GREEN}============================================${PLAIN}"
-echo -e "${BOLD}          Gate (Sing-box 版) 安装脚本         ${PLAIN}"
-echo -e "${GREEN}============================================${PLAIN}"
-echo -e ""
+check_arch() {
+    local arch=$(uname -m)
+    case $arch in
+        x86_64)  SINGBOX_ARCH="amd64" ;;
+        aarch64) SINGBOX_ARCH="arm64" ;;
+        armv7l)  SINGBOX_ARCH="armv7" ;;
+        *)       echo -e "${RED}[错误] 不支持的架构: $arch${PLAIN}" && exit 1 ;;
+    esac
+}
 
 install_deps() {
-    echo -e "${YELLOW}[1/4] 正在安装系统依赖...${PLAIN}"
-    if [[ -f /etc/redhat-release ]]; then
-        yum install -y wget curl tar jq cronie openssl
-    elif [[ -f /etc/debian_version ]]; then
-        apt update -y && apt install -y wget curl tar jq cron openssl
-    else
-        echo -e "${RED}未检测到支持的操作系统，请手动安装依赖。${PLAIN}"
+    echo -e "${BLUE}[1/5]${PLAIN} 正在安装系统依赖..."
+    if command -v apt-get &>/dev/null; then
+        apt-get update -y && apt-get install -y curl socat cron openssl jq 2>/dev/null
+    elif command -v yum &>/dev/null; then
+        yum install -y curl socat crond openssl jq 2>/dev/null
     fi
-    echo -e "${GREEN}依赖安装完成。${PLAIN}"
+    echo -e "${GREEN}[完成]${PLAIN} 依赖安装完成"
 }
 
 install_singbox() {
-    echo -e "${YELLOW}[2/4] 正在下载 Gate 核心 (Sing-box)...${PLAIN}"
-    local version=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
-    version=${version#v}
-    [[ -z "$version" ]] && version="1.9.6"
-    echo -e "核心版本: ${BOLD}v${version}${PLAIN}"
+    echo -e "${BLUE}[2/5]${PLAIN} 正在下载 sing-box 核心..."
+    local url="https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/sing-box-${SINGBOX_VERSION}-linux-${SINGBOX_ARCH}.tar.gz"
     
-    local url="https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-linux-${os_arch}.tar.gz"
-    if ! wget --no-check-certificate -qO /tmp/sing-box.tar.gz "$url"; then
-        echo -e "${RED}下载失败，请检查网络是否支持访问 GitHub。${PLAIN}"
-        exit 1
-    fi
+    curl -L -o /tmp/sing-box.tar.gz "$url"
     tar -xzf /tmp/sing-box.tar.gz -C /tmp/
-    mkdir -p /usr/local/bin/
-    mv /tmp/sing-box-${version}-linux-${os_arch}/sing-box /usr/local/bin/gate-core
+    cp /tmp/sing-box-${SINGBOX_VERSION}-linux-${SINGBOX_ARCH}/sing-box /usr/local/bin/gate-core
     chmod +x /usr/local/bin/gate-core
     rm -rf /tmp/sing-box*
-    echo -e "${GREEN}核心安装成功。${PLAIN}"
+    
+    echo -e "${GREEN}[完成]${PLAIN} sing-box ${SINGBOX_VERSION} 已安装"
 }
 
 install_manager() {
-    echo -e "${YELLOW}[3/4] 正在安装管理脚本...${PLAIN}"
-    wget --no-check-certificate -qO /usr/bin/gate https://raw.githubusercontent.com/997862/Gate/main/gate-manager.sh
+    echo -e "${BLUE}[3/5]${PLAIN} 正在安装 Gate 管理脚本..."
+    curl -L -o /usr/bin/gate "${GITHUB_REPO}/gate-manager.sh"
     chmod +x /usr/bin/gate
-    echo -e "${GREEN}管理脚本安装完成。${PLAIN}"
+    echo -e "${GREEN}[完成]${PLAIN} 管理脚本已安装"
 }
 
-install_service() {
-    echo -e "${YELLOW}[4/4] 正在配置系统服务...${PLAIN}"
-    wget --no-check-certificate -qO /etc/systemd/system/gate@.service https://raw.githubusercontent.com/997862/Gate/main/gate@.service
-    systemctl daemon-reload
+install_systemd() {
+    echo -e "${BLUE}[4/5]${PLAIN} 正在配置 systemd 服务..."
     mkdir -p /etc/gate
-    echo -e "${GREEN}系统服务配置完成。${PLAIN}"
+    
+    cat > /etc/systemd/system/gate@.service << 'SERVICE'
+[Unit]
+Description=Gate 代理服务节点 (%i)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/gate-core run -c /etc/gate/%i.json
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=51200
+LimitNPROC=51200
+
+[Install]
+WantedBy=multi-user.target
+SERVICE
+
+    systemctl daemon-reload
+    echo -e "${GREEN}[完成]${PLAIN} systemd 服务已配置"
 }
 
+generate_conf() {
+    echo -e "${BLUE}[5/5]${PLAIN} 正在生成配置文件..."
+    if [[ ! -f /etc/gate/gate.conf ]]; then
+        curl -L -o /etc/gate/gate.conf "${GITHUB_REPO}/gate.conf.example"
+        echo -e "${GREEN}[完成]${PLAIN} 配置文件已生成: /etc/gate/gate.conf"
+    else
+        echo -e "${YELLOW}[跳过]${PLAIN} 配置文件已存在"
+    fi
+}
+
+finish() {
+    echo ""
+    echo -e "${BOLD}═══════════════════════════════════════${PLAIN}"
+    echo -e "${GREEN}   Gate 安装完成！${PLAIN}"
+    echo -e "${BOLD}═══════════════════════════════════════${PLAIN}"
+    echo ""
+    echo -e "版本: ${BOLD}Gate v${GATE_VERSION}${PLAIN}"
+    echo -e "核心: ${BOLD}sing-box v${SINGBOX_VERSION}${PLAIN}"
+    echo ""
+    echo -e "${BOLD}快速开始:${PLAIN}"
+    echo "  1. 编辑配置: gate config"
+    echo "  2. 测试对接: gate test"
+    echo "  3. 启动服务: gate start"
+    echo "  4. 查看状态: gate status"
+    echo ""
+    echo -e "${BOLD}常用命令:${PLAIN}"
+    echo "  gate            - 交互式管理面板"
+    echo "  gate restart    - 重启节点"
+    echo "  gate update     - 更新 Gate"
+    echo "  gate log        - 查看实时日志"
+    echo "  gate uninstall  - 完全卸载"
+    echo ""
+    echo -e "文档: ${BLUE}https://github.com/997862/Gate${PLAIN}"
+    echo ""
+    
+    # 自动启动管理面板
+    read -p "是否立即启动管理面板？[Y/n] " answer
+    if [[ "$answer" != "n" && "$answer" != "N" ]]; then
+        gate
+    fi
+}
+
+# 主流程
+check_root
+check_arch
 install_deps
 install_singbox
 install_manager
-install_service
-
-echo -e ""
-echo -e "${GREEN}============================================${PLAIN}"
-echo -e "${BOLD}          安装完成！                         ${PLAIN}"
-echo -e "${GREEN}============================================${PLAIN}"
-echo -e ""
-echo -e "输入 ${GREEN}gate${PLAIN} 启动管理面板"
-echo -e "配置文件位于: ${YELLOW}/etc/gate/gate.conf${PLAIN}"
-echo -e ""
-sleep 1
-gate
+install_systemd
+generate_conf
+finish

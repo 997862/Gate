@@ -1,16 +1,16 @@
 # =========================================
-# Gate 配置文件 (对标 Soga 格式)
+# Gate 配置文件
 # =========================================
 
 # --- 基础配置 ---
 # 面板类型: xboard, v2board, sspanel, newboard
 type=xboard
-# 节点协议类型: vmess, vless, trojan, shadowsocks, hysteria2
+# 节点协议类型: vmess, vless, trojan, shadowsocks, hysteria2, tuic
 server_type=vmess
 # 节点 ID (对应面板后台生成的编号)
 node_id=1
-# 授权密钥 (Gate 开源免费，此项留空即可)
-soga_key=
+# 授权密钥 (开源免费，此项留空)
+license_key=
 
 # --- 对接方式 (二选一) ---
 # 可选值: webapi, db, none (单机模式)
@@ -33,8 +33,8 @@ db_password=
 # 证书模式: manual (手动), acme (自动), none (无)
 cert_mode=none
 # 手动证书路径
-cert_file=/root/Nginx/STAR_peaairport_net_integrated.crt
-key_file=/root/Nginx/STAR_peaairport_net.key
+cert_file=
+key_file=
 # 自动证书配置
 cert_domain=
 cert_key_length=ec-256
